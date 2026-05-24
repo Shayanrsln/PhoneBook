@@ -1,71 +1,77 @@
-import json
-#dar soorat naboodan phone-book.json oon ro misaze
-def read_phonebook(path="phone-book.json"):
-    try:
-        with open(path, "r", encoding="utf-8") as json_file:
-            return json.load(json_file)
+import os
+from sqlite3 import connect
+from database import Db
 
-    except FileNotFoundError:
-        return []
+db = Db("phonebook.db")
 
-# baz nevisi dar file phone-book.json
-def write_phonebook(phonebook):
-    with open("phone-book.json", 'w', encoding='utf-8') as json_file:
-        json.dump(phonebook, json_file, indent=1, ensure_ascii=False)
-#in method contact ro baramoon print migire 
-def get_contact(email):
-    phonebook = read_phonebook()
-    for contact in phonebook:
-        if contact["email"] == email:
-            return contact
-    return None
+# این تابع رو تغییر دادیم که فقط جدول رو بسازه
+def ensure_table_exists():
+    db.cursor.execute("CREATE TABLE IF NOT EXISTS contacts (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, phone TEXT, email TEXT, address TEXT)")
+    db.connection.commit()
 
-# in method hame info haro dakhel temp mirize va append mishe tooye phone-book
-def add_contact():
-    phonebook = read_phonebook()
-    name = input("enter your name: ")
-    number = input("enter your number: ")
-    email = input("enter your email: ")
-    address = input("enter your address: ")
+# حالا اول مطمئن شو جدول هست، بعد تابع ثبت رو صدا بزن
+ensure_table_exists()
 
-    temp = {"name":name, "number":number, "email":email, "address":address}
+def creat_contact():
+    name = input("Enter your name: ")
+    number = input("Enter your number: ")
+    email = input("Enter your email: ")
+    address = input("Enter your address: ")
 
-    phonebook.append(temp)
-    write_phonebook(phonebook)
+    query = "INSERT INTO contacts (name, phone, email, address) VALUES (?, ?, ?, ?)"
+    data = (name, number, email, address)
+    
+    db.cursor.execute(query, data)
+    db.connection.commit()
+    print("import succes")
 
-# in method email ro be onvan input migire va dar soorat sahih boodan amaliat edit ro rooye in email ejra mikone
+def get_contact():
+    email_input = input("Enter email: ")
+    query = "SELECT * FROM contacts WHERE email = ?"
+    db.cursor.execute(query, (email_input,))
+    row = db.cursor.fetchone()
+
+    if row:
+        print(row)
+    else:
+        print("No contact found with this email.")
+
+
 def edit_contact():
-    z = input("email: ") # فرض کنیم اینجا ایمیل وارد می‌شود
-    contact = get_contact(z)
-    if contact is None:
+    # ۱. پیدا کردن مخاطب بر اساس ایمیل
+    target_email = input("Enter the email of the contact to update: ")
+    db.cursor.execute("SELECT * FROM contacts WHERE email = ?", (target_email,))
+    contact = db.cursor.fetchone()
+
+    if not contact:
         print("Contact not found!")
         return
-    key = input("what do you want to edit? [name | number | address | email ]: ")
-    value = input("value: ")
-    contact[key] = value
 
-    phonebook = read_phonebook()
+    # ۲. پرسیدن اینکه چه فیلدی ویرایش شود
+    print("Which field do you want to update? (name, phone, email, address)")
+    field = input("Enter field name: ").lower()
 
-    for item in phonebook:
-        if item["email"] == z:
-            item.update(contact)
-            break
-        
-    write_phonebook(phonebook)
-
-# pak kardan contact
-def delete_contact():
-    phonebook = read_phonebook()
-    are_u_sure = input("are u sure to delete contact? ")
-    if are_u_sure.lower() == "yes":
-        x = input("email ro vared konid :")
-        contact = get_contact(x)
-        if contact:
-            phonebook.remove(contact)
-            write_phonebook(phonebook)
-            print(f"{contact['name']} delete succsseful")
-        else:
-            print("user not found")
-
-    else:
+    if field not in ['name', 'phone', 'email', 'address']:
+        print("Invalid field!")
         return
+
+    # ۳. گرفتن مقدار جدید
+    new_value = input(f"Enter new {field}: ")
+
+    # ۴. اجرای آپدیت (استفاده از F-string برای نام ستون امن است چون از لیستِ مجاز چک شده)
+    query = f"UPDATE contacts SET {field} = ? WHERE email = ?"
+    db.cursor.execute(query, (new_value, target_email))
+    db.connection.commit()
+    
+    print(f"Contact {field} updated successfully!")
+
+def delete_contact():
+    email = input("email ro vared konid: ")
+    query = "DELETE FROM contacts WHERE email = ? "
+    db.cursor.execute(query, (email,))
+    db.connection.commit()
+    if db.cursor.rowcount > 0:
+        print("delete succes")
+    else:
+        print("No Contact found with this email!!")
+    
