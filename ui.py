@@ -3,7 +3,7 @@ from tkinter import messagebox
 from functions import db
 
 
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
 
@@ -30,7 +30,7 @@ class PhonebookApp(ctk.CTk):
         frame.pack(fill="both", expand=True, padx=20, pady=20)
         self.current_frame = frame
 
-        title = ctk.CTkLabel(frame, text="Phonebook Manager", font=("Arial", 28, "bold"))
+        title = ctk.CTkLabel(frame, text="Phonebook Manager", font=("Vazir", 28, "bold"))
         title.pack(pady=30)
 
         ctk.CTkButton(frame, text="Add Contact", width=250, command=self.show_add_contact).pack(pady=8)

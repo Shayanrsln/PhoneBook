@@ -11,7 +11,7 @@ def main():
 
     if request_type == "get":
          get_contact()
-
+         
     if request_type == "edit":
         edit_contact()
 
